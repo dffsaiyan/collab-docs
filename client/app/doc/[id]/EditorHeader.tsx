@@ -53,6 +53,10 @@ export default function EditorHeader({ docId, editor }: EditorHeaderProps) {
   const [activeColorPicker, setActiveColorPicker] = useState<"text" | "highlight" | null>(null);
   // Tham chiếu DOM đến popup bảng màu
   const colorPickerRef = useRef<HTMLDivElement>(null);
+  // Trạng thái mở menu căn lề
+  const [isAlignMenuOpen, setIsAlignMenuOpen] = useState(false);
+  // Tham chiếu DOM đến khung menu căn lề
+  const alignMenuRef = useRef<HTMLDivElement>(null);
 
   // Áp dụng cỡ chữ mới vào văn bản đang chọn hoặc con trỏ chuột
   const applyFontSize = (sizeVal: number) => {
@@ -108,7 +112,15 @@ export default function EditorHeader({ docId, editor }: EditorHeaderProps) {
     return editor.isActive({ textAlign: align });
   };
 
-  // Tự động đóng menu đề mục và bảng màu khi click chuột ra bất kỳ vị trí nào bên ngoài
+  // Lấy icon căn lề hiện tại theo con trỏ chuột để hiển thị trên nút chính
+  const getCurrentAlignIcon = () => {
+    if (isAlignActive("center")) return "format_align_center";
+    if (isAlignActive("right")) return "format_align_right";
+    if (isAlignActive("justify")) return "format_align_justify";
+    return "format_align_left";
+  };
+
+  // Tự động đóng menu đề mục, bảng màu và menu căn lề khi click chuột ra bất kỳ vị trí nào bên ngoài
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (headingMenuRef.current && !headingMenuRef.current.contains(event.target as Node)) {
@@ -117,16 +129,19 @@ export default function EditorHeader({ docId, editor }: EditorHeaderProps) {
       if (colorPickerRef.current && !colorPickerRef.current.contains(event.target as Node)) {
         setActiveColorPicker(null);
       }
+      if (alignMenuRef.current && !alignMenuRef.current.contains(event.target as Node)) {
+        setIsAlignMenuOpen(false);
+      }
     };
 
-    if (isHeadingMenuOpen || activeColorPicker) {
+    if (isHeadingMenuOpen || activeColorPicker || isAlignMenuOpen) {
       document.addEventListener("mousedown", handleClickOutside);
     }
 
     return () => {
       document.removeEventListener("mousedown", handleClickOutside);
     };
-  }, [isHeadingMenuOpen, activeColorPicker]);
+  }, [isHeadingMenuOpen, activeColorPicker, isAlignMenuOpen]);
 
   // Hàm xác định nhãn hiển thị trên thanh công cụ theo con trỏ chuột
   const getCurrentHeadingLabel = () => {
@@ -643,48 +658,84 @@ export default function EditorHeader({ docId, editor }: EditorHeaderProps) {
 
         <div className="w-[1px] h-4 bg-slate-200 mx-1 shrink-0" />
 
-        {/* Nhóm căn lề đoạn văn */}
-        <div className="flex items-center gap-0.5 shrink-0">
+        {/* Nhóm căn lề đoạn văn dạng Dropdown gọn gàng */}
+        <div ref={alignMenuRef} className="relative shrink-0">
           <button
             type="button"
-            onClick={() => handleAlign("left")}
-            className={`w-7 h-7 flex items-center justify-center rounded transition-colors cursor-pointer ${
-              isAlignActive("left") ? "bg-blue-50 text-blue-600 font-medium" : "text-slate-700 hover:bg-slate-100"
+            onClick={() => setIsAlignMenuOpen(!isAlignMenuOpen)}
+            className={`h-7 px-1.5 flex items-center gap-0.5 rounded transition-colors cursor-pointer ${
+              isAlignMenuOpen ? "bg-slate-200" : "hover:bg-slate-100 text-slate-700"
             }`}
-            title="Căn lề trái"
+            title="Căn lề đoạn văn"
           >
-            <span className="material-symbols-outlined text-[17px]">format_align_left</span>
+            <span className="material-symbols-outlined text-[17px]">
+              {getCurrentAlignIcon()}
+            </span>
+            <span className="material-symbols-outlined text-[14px] text-slate-500">
+              {isAlignMenuOpen ? "arrow_drop_up" : "arrow_drop_down"}
+            </span>
           </button>
-          <button
-            type="button"
-            onClick={() => handleAlign("center")}
-            className={`w-7 h-7 flex items-center justify-center rounded transition-colors cursor-pointer ${
-              isAlignActive("center") ? "bg-blue-50 text-blue-600 font-medium" : "text-slate-700 hover:bg-slate-100"
-            }`}
-            title="Căn giữa"
-          >
-            <span className="material-symbols-outlined text-[17px]">format_align_center</span>
-          </button>
-          <button
-            type="button"
-            onClick={() => handleAlign("right")}
-            className={`w-7 h-7 flex items-center justify-center rounded transition-colors cursor-pointer ${
-              isAlignActive("right") ? "bg-blue-50 text-blue-600 font-medium" : "text-slate-700 hover:bg-slate-100"
-            }`}
-            title="Căn lề phải"
-          >
-            <span className="material-symbols-outlined text-[17px]">format_align_right</span>
-          </button>
-          <button
-            type="button"
-            onClick={() => handleAlign("justify")}
-            className={`w-7 h-7 flex items-center justify-center rounded transition-colors cursor-pointer ${
-              isAlignActive("justify") ? "bg-blue-50 text-blue-600 font-medium" : "text-slate-700 hover:bg-slate-100"
-            }`}
-            title="Căn đều hai bên"
-          >
-            <span className="material-symbols-outlined text-[17px]">format_align_justify</span>
-          </button>
+
+          {/* Hộp Dropdown xổ xuống dạng dải ngang 4 nút */}
+          {isAlignMenuOpen && (
+            <div className="absolute top-8 left-0 z-50 bg-white rounded-lg shadow-xl border border-slate-200 p-1 flex items-center gap-1 select-none">
+              <button
+                type="button"
+                onClick={() => {
+                  handleAlign("left");
+                  setIsAlignMenuOpen(false);
+                }}
+                className={`w-7 h-7 flex items-center justify-center rounded transition-colors cursor-pointer ${
+                  isAlignActive("left") ? "bg-blue-50 text-blue-600 font-medium" : "text-slate-700 hover:bg-slate-100"
+                }`}
+                title="Căn lề trái"
+              >
+                <span className="material-symbols-outlined text-[17px]">format_align_left</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  handleAlign("center");
+                  setIsAlignMenuOpen(false);
+                }}
+                className={`w-7 h-7 flex items-center justify-center rounded transition-colors cursor-pointer ${
+                  isAlignActive("center") ? "bg-blue-50 text-blue-600 font-medium" : "text-slate-700 hover:bg-slate-100"
+                }`}
+                title="Căn giữa"
+              >
+                <span className="material-symbols-outlined text-[17px]">format_align_center</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  handleAlign("right");
+                  setIsAlignMenuOpen(false);
+                }}
+                className={`w-7 h-7 flex items-center justify-center rounded transition-colors cursor-pointer ${
+                  isAlignActive("right") ? "bg-blue-50 text-blue-600 font-medium" : "text-slate-700 hover:bg-slate-100"
+                }`}
+                title="Căn lề phải"
+              >
+                <span className="material-symbols-outlined text-[17px]">format_align_right</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  handleAlign("justify");
+                  setIsAlignMenuOpen(false);
+                }}
+                className={`w-7 h-7 flex items-center justify-center rounded transition-colors cursor-pointer ${
+                  isAlignActive("justify") ? "bg-blue-50 text-blue-600 font-medium" : "text-slate-700 hover:bg-slate-100"
+                }`}
+                title="Căn đều hai bên"
+              >
+                <span className="material-symbols-outlined text-[17px]">format_align_justify</span>
+              </button>
+            </div>
+          )}
         </div>
 
         <div className="w-[1px] h-4 bg-slate-200 mx-1 shrink-0" />
