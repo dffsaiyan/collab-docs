@@ -12,7 +12,7 @@
 
 ### 1.1. Bối cảnh & Bài toán (Problem Statement)
 * **Thực trạng:** Web CRUD truyền thống dễ gây xung đột và ghi đè mất dữ liệu khi nhiều người cùng chỉnh sửa.
-* **Mục tiêu dự án:** Xây dựng nền tảng soạn thảo trực tuyến real-time (tương tự Google Docs), đồng bộ tức thì và không mất dữ liệu.
+* **Mục tiêu dự án:** Xây dựng nền tảng soạn thảo trực tuyến real-time chuẩn văn phòng, đồng bộ tức thì và không mất dữ liệu.
 
 ### 1.2. Mục tiêu kỹ thuật cốt lõi (Core Objectives)
 * **Soạn thảo trực quan (Rich-text Editing):** Hỗ trợ đầy đủ định dạng chuẩn (Tiêu đề, In đậm, Nghiêng, Danh sách, Khối mã nguồn).
@@ -123,9 +123,9 @@ sequenceDiagram
 
 ---
 
-### 3.2. So sánh Kỹ thuật: CRDT (Yjs) vs OT (Google Docs)
+### 3.2. So sánh Kỹ thuật: CRDT (Yjs) vs OT (Operational Transformation)
 
-| Tiêu chí | OT (Operational Transformation - Google Docs) | CRDT (Yjs - Hệ thống của chúng ta) |
+| Tiêu chí | OT (Operational Transformation) | CRDT (Yjs - Hệ thống của chúng ta) |
 | :--- | :--- | :--- |
 | **Bản chất** | Biến đổi vị trí (index) của ký tự dựa trên một máy chủ trung tâm làm trọng tài. | Mỗi ký tự được gắn một **ID toàn cầu duy nhất** (Client ID + Timestamp). |
 | **Vai trò Máy chủ** | Máy chủ phải tính toán thuật toán rất nặng để giải quyết xung đột. | Máy chủ **không cần tính toán**, chỉ làm nhiệm vụ chuyển tiếp gói tin (Relay). |
@@ -176,7 +176,7 @@ interface UserPresence {
 | Tầng Hệ thống | Công nghệ Lựa chọn | Vai trò trong Hệ thống |
 | :--- | :--- | :--- |
 | **Frontend Framework** | **Next.js (React) + TypeScript** | Xây dựng giao diện, quản lý State, đảm bảo code chặt chẽ và không dính lỗi kiểu dữ liệu. |
-| **Giao diện & Styling** | **Tailwind CSS + Lucide Icons** | Thiết kế giao diện hiện đại, tối giản theo phong cách Notion/Google Docs. |
+| **Giao diện & Styling** | **Tailwind CSS + Lucide Icons** | Thiết kế giao diện hiện đại, tối giản theo chuẩn văn phòng cao cấp. |
 | **Trình soạn thảo văn bản** | **Tiptap (v2)** | Bộ khung soạn thảo văn bản không giao diện (Headless), hoạt động cực kỳ mượt mà. |
 | **Thuật toán Real-time** | **Yjs** | Cấu trúc dữ liệu phân tán cốt lõi, tự động giải quyết xung đột khi nhiều người cùng gõ. |
 | **Đường truyền mạng** | **y-websocket** | Kết nối 2 chiều liên tục để truyền tải các gói tin nhị phân siêu nhẹ. |

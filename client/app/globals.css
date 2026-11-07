@@ -39,3 +39,39 @@ body {
 ::-webkit-scrollbar {
   display: none;
 }
+
+/* ========================================================= */
+/* QUY TẮC IN ẤN TIÊU CHUẨN: CHỈ IN DUY NHẤT TỜ GIẤY TÀI LIỆU */
+/* ========================================================= */
+@media print {
+  /* Tự động triệt tiêu dòng ngày giờ, tiêu đề web và link URL của trình duyệt */
+  @page {
+    size: A4;
+    margin: 0;
+  }
+
+  /* 1. Ẩn toàn bộ mọi thành phần trên trang web */
+  body * {
+    visibility: hidden !important;
+  }
+
+  /* 2. Chỉ cho phép duy nhất tờ giấy và nội dung văn bản hiển thị */
+  #collab-print-area,
+  #collab-print-area * {
+    visibility: visible !important;
+  }
+
+  /* 3. Đưa tờ giấy về góc trên cùng bên trái của trang in chuẩn A4 */
+  #collab-print-area {
+    position: absolute !important;
+    left: 0 !important;
+    top: 0 !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    min-height: auto !important;
+    margin: 0 !important;
+    padding: 20mm 20mm !important;
+    border: none !important;
+    box-shadow: none !important;
+  }
+}
