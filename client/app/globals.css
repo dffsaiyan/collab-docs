@@ -1,26 +1,41 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
+@theme {
+  /* Bảng màu giao diện chuẩn theo bản thiết kế */
+  --color-primary: #004ac6;
+  --color-on-primary: #ffffff;
+  --color-primary-container: #2563eb;
+  --color-primary-fixed: #dbe1ff;
+
+  --color-secondary: #0060ac;
+  --color-secondary-fixed: #d4e3ff;
+
+  --color-background: #faf8ff;
+  --color-on-background: #131b2e;
+  --color-on-surface: #131b2e;
+  --color-on-surface-variant: #434655;
+
+  --color-surface-container-lowest: #ffffff;
+  --color-surface-container-low: #f2f3ff;
+  --color-surface-container: #eaedff;
+
+  --color-outline: #737686;
+  --color-outline-variant: #c3c6d7;
+
+  --color-tertiary: #4e565d;
+  --color-error: #ba1a1a;
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
-}
-
+/* Cấu hình hiển thị cơ bản */
+html,
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  margin: 0;
+  padding: 0;
+  background-color: var(--color-background);
+  color: var(--color-on-surface);
+}
+
+/* Ẩn thanh cuộn mặc định cho giao diện thoáng mắt */
+::-webkit-scrollbar {
+  display: none;
 }
