@@ -40,6 +40,54 @@ body {
   display: none;
 }
 
+/* Định dạng kiểu chữ tiêu đề cho trình soạn thảo Tiptap */
+.tiptap h1 {
+  font-size: 2rem;
+  font-weight: 700;
+  line-height: 1.25;
+  margin-top: 1.25rem;
+  margin-bottom: 0.5rem;
+  color: #0f172a;
+}
+
+.tiptap h2 {
+  font-size: 1.5rem;
+  font-weight: 700;
+  line-height: 1.3;
+  margin-top: 1rem;
+  margin-bottom: 0.35rem;
+  color: #1e293b;
+}
+
+.tiptap h3 {
+  font-size: 1.25rem;
+  font-weight: 600;
+  line-height: 1.35;
+  margin-top: 0.75rem;
+  margin-bottom: 0.25rem;
+  color: #334155;
+}
+
+.tiptap h4 {
+  font-size: 1rem;
+  font-weight: 600;
+  line-height: 1.4;
+  margin-top: 0.5rem;
+  margin-bottom: 0.25rem;
+  color: #475569;
+}
+
+.tiptap p {
+  margin-top: 0;
+  margin-bottom: 0.5rem;
+  line-height: 1.625;
+}
+
+/* Đảm bảo đường gạch chân hiển thị rõ ràng trên mọi trình duyệt */
+.tiptap u {
+  text-decoration: underline;
+}
+
 /* ========================================================= */
 /* QUY TẮC IN ẤN TIÊU CHUẨN: CHỈ IN DUY NHẤT TỜ GIẤY TÀI LIỆU */
 /* ========================================================= */
