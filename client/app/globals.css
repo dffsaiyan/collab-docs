@@ -88,6 +88,316 @@ body {
   text-decoration: underline;
 }
 
+/* Định dạng danh sách chuẩn văn bản cơ bản */
+.tiptap ul,
+.tiptap ol {
+  padding-left: 1.5rem;
+  margin: 0.5rem 0;
+}
+
+.tiptap li {
+  margin: 0.2rem 0;
+  line-height: 1.625;
+}
+
+.tiptap li p {
+  margin: 0;
+}
+
+/* 6 MẪU DANH SÁCH CHẤM (BULLET LIST) */
+/* 1. Mẫu mặc định: Chấm tròn ● -> Tròn rỗng ○ -> Vuông ■ */
+.tiptap ul[data-list-style="default"],
+.tiptap ul:not([data-list-style]) {
+  list-style-type: disc;
+}
+.tiptap ul[data-list-style="default"] ul,
+.tiptap ul:not([data-list-style]) ul {
+  list-style-type: circle;
+}
+.tiptap ul[data-list-style="default"] ul ul,
+.tiptap ul:not([data-list-style]) ul ul {
+  list-style-type: square;
+}
+
+/* 2. Mẫu hoa thị ❖ -> Mũi nhọn ➤ -> Vuông ■ */
+.tiptap ul[data-list-style="diamond"] {
+  list-style-type: "❖  ";
+}
+.tiptap ul[data-list-style="diamond"] ul {
+  list-style-type: "➤  ";
+}
+.tiptap ul[data-list-style="diamond"] ul ul {
+  list-style-type: "■  ";
+}
+
+/* 3. Mẫu hộp vuông rỗng ❑ -> ❒ -> ❏ */
+.tiptap ul[data-list-style="box"] {
+  list-style-type: "❑  ";
+}
+.tiptap ul[data-list-style="box"] ul {
+  list-style-type: "❒  ";
+}
+.tiptap ul[data-list-style="box"] ul ul {
+  list-style-type: "❏  ";
+}
+
+/* 4. Mẫu mũi tên ➜ -> Thoi ◆ -> Chấm ● */
+.tiptap ul[data-list-style="arrow"] {
+  list-style-type: "➜  ";
+}
+.tiptap ul[data-list-style="arrow"] ul {
+  list-style-type: "◆  ";
+}
+.tiptap ul[data-list-style="arrow"] ul ul {
+  list-style-type: "●  ";
+}
+
+/* 5. Mẫu ngôi sao ★ -> Tròn ○ -> Vuông ■ */
+.tiptap ul[data-list-style="star"] {
+  list-style-type: "★  ";
+}
+.tiptap ul[data-list-style="star"] ul {
+  list-style-type: circle;
+}
+.tiptap ul[data-list-style="star"] ul ul {
+  list-style-type: square;
+}
+
+/* 6. Mẫu mũi tên bay ➢ -> Tròn ○ -> Vuông ■ */
+.tiptap ul[data-list-style="pointer"] {
+  list-style-type: "➢  ";
+}
+.tiptap ul[data-list-style="pointer"] ul {
+  list-style-type: circle;
+}
+.tiptap ul[data-list-style="pointer"] ul ul {
+  list-style-type: square;
+}
+
+/* 6 MẪU DANH SÁCH ĐÁNH SỐ (NUMBERED LIST) */
+/* 1. Mẫu số và chữ: 1. -> a. -> i. */
+.tiptap ol[data-list-style="decimal-alpha"],
+.tiptap ol:not([data-list-style]) {
+  list-style-type: decimal;
+}
+.tiptap ol[data-list-style="decimal-alpha"] ol,
+.tiptap ol:not([data-list-style]) ol {
+  list-style-type: lower-alpha;
+}
+.tiptap ol[data-list-style="decimal-alpha"] ol ol,
+.tiptap ol:not([data-list-style]) ol ol {
+  list-style-type: lower-roman;
+}
+
+/* 2. Mẫu dấu ngoặc đơn: 1) -> a) -> i) */
+.tiptap ol[data-list-style="parenthesis"] {
+  list-style-type: none;
+  counter-reset: p-c;
+}
+.tiptap ol[data-list-style="parenthesis"] > li {
+  counter-increment: p-c;
+  position: relative;
+}
+.tiptap ol[data-list-style="parenthesis"] > li::before {
+  content: counter(p-c) ") ";
+  position: absolute;
+  left: -1.4rem;
+}
+.tiptap ol[data-list-style="parenthesis"] ol {
+  list-style-type: none;
+  counter-reset: p-sub;
+}
+.tiptap ol[data-list-style="parenthesis"] ol > li {
+  counter-increment: p-sub;
+  position: relative;
+}
+.tiptap ol[data-list-style="parenthesis"] ol > li::before {
+  content: counter(p-sub, lower-alpha) ") ";
+  position: absolute;
+  left: -1.4rem;
+}
+.tiptap ol[data-list-style="parenthesis"] ol ol {
+  list-style-type: none;
+  counter-reset: p-sub3;
+}
+.tiptap ol[data-list-style="parenthesis"] ol ol > li {
+  counter-increment: p-sub3;
+  position: relative;
+}
+.tiptap ol[data-list-style="parenthesis"] ol ol > li::before {
+  content: counter(p-sub3, lower-roman) ") ";
+  position: absolute;
+  left: -1.4rem;
+}
+
+/* 3. Mẫu phân cấp tài liệu: 1. -> 1.1. -> 1.2.1. */
+.tiptap ol[data-list-style="legal"] {
+  list-style-type: none;
+  counter-reset: l-1;
+}
+.tiptap ol[data-list-style="legal"] > li {
+  counter-increment: l-1;
+  position: relative;
+}
+.tiptap ol[data-list-style="legal"] > li::before {
+  content: counter(l-1) ". ";
+  position: absolute;
+  left: -1.6rem;
+}
+.tiptap ol[data-list-style="legal"] ol {
+  list-style-type: none;
+  counter-reset: l-2;
+}
+.tiptap ol[data-list-style="legal"] ol > li {
+  counter-increment: l-2;
+  position: relative;
+}
+.tiptap ol[data-list-style="legal"] ol > li::before {
+  content: counter(l-1) "." counter(l-2) ". ";
+  position: absolute;
+  left: -2.2rem;
+}
+.tiptap ol[data-list-style="legal"] ol ol {
+  list-style-type: none;
+  counter-reset: l-3;
+}
+.tiptap ol[data-list-style="legal"] ol ol > li {
+  counter-increment: l-3;
+  position: relative;
+}
+.tiptap ol[data-list-style="legal"] ol ol > li::before {
+  content: counter(l-1) "." counter(l-2) "." counter(l-3) ". ";
+  position: absolute;
+  left: -2.8rem;
+}
+
+/* 4. Mẫu chữ hoa: A. -> a. -> i. */
+.tiptap ol[data-list-style="upper-alpha"] {
+  list-style-type: upper-alpha;
+}
+.tiptap ol[data-list-style="upper-alpha"] ol {
+  list-style-type: lower-alpha;
+}
+.tiptap ol[data-list-style="upper-alpha"] ol ol {
+  list-style-type: lower-roman;
+}
+
+/* 5. Mẫu số La Mã: I. -> A. -> 1. */
+.tiptap ol[data-list-style="roman"] {
+  list-style-type: upper-roman;
+}
+.tiptap ol[data-list-style="roman"] ol {
+  list-style-type: upper-alpha;
+}
+.tiptap ol[data-list-style="roman"] ol ol {
+  list-style-type: decimal;
+}
+
+/* 6. Mẫu có số 0 đệm: 01. -> a. -> i. */
+.tiptap ol[data-list-style="padded"] {
+  list-style-type: decimal-leading-zero;
+}
+.tiptap ol[data-list-style="padded"] ol {
+  list-style-type: lower-alpha;
+}
+.tiptap ol[data-list-style="padded"] ol ol {
+  list-style-type: lower-roman;
+}
+
+/* ========================================================= */
+/* ĐỊNH DẠNG CHECKLIST (TASK LIST) VÀ TRÍCH DẪN (BLOCKQUOTE) */
+/* ========================================================= */
+
+/* Định dạng danh sách công việc có ô checkbox */
+.tiptap ul[data-type="taskList"] {
+  list-style: none;
+  padding-left: 0.25rem;
+  margin: 0.5rem 0;
+}
+
+/* Mỗi mục công việc căn hàng ngang với ô checkbox */
+.tiptap ul[data-type="taskList"] > li {
+  display: flex;
+  align-items: flex-start;
+  margin: 0.25rem 0;
+  gap: 0.5rem;
+}
+
+/* Ô vuông checkbox tương tác */
+.tiptap ul[data-type="taskList"] > li > label {
+  display: flex;
+  align-items: center;
+  user-select: none;
+  margin-top: 0.25rem;
+  cursor: pointer;
+}
+
+/* Tùy chỉnh kích thước và giao diện ô checkbox */
+.tiptap ul[data-type="taskList"] > li input[type="checkbox"] {
+  cursor: pointer;
+  width: 1rem;
+  height: 1rem;
+  accent-color: #2563eb;
+  border-radius: 0.25rem;
+}
+
+/* Khối nội dung văn bản bên cạnh checkbox */
+.tiptap ul[data-type="taskList"] > li > div {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+/* Thụt lề cho danh sách công việc lồng nhau khi nhấn Tab */
+.tiptap ul[data-type="taskList"] ul[data-type="taskList"] {
+  margin-left: 1.5rem;
+}
+
+/* Khi công việc được tích hoàn thành: gạch ngang và mờ chữ */
+.tiptap ul[data-type="taskList"] li[data-checked="true"] > div > p {
+  text-decoration: line-through;
+  color: #94a3b8;
+}
+
+/* Định dạng khối trích dẫn tài liệu chuẩn */
+.tiptap blockquote {
+  border-left: 3px solid #94a3b8;
+  padding-left: 1rem;
+  margin: 0.75rem 0;
+  color: #475569;
+  font-style: italic;
+}
+
+/* ========================================================= */
+/* ĐỊNH DẠNG LIÊN KẾT (LINK) VÀ HÌNH ẢNH (IMAGE) */
+/* ========================================================= */
+
+/* Định dạng liên kết trong văn bản */
+.tiptap a {
+  color: #2563eb;
+  text-decoration: underline;
+  cursor: pointer;
+  transition: color 0.15s ease;
+}
+
+.tiptap a:hover {
+  color: #1d4ed8;
+}
+
+/* Định dạng hình ảnh trong văn bản */
+.tiptap img {
+  max-width: 100%;
+  height: auto;
+  border-radius: 0.375rem;
+  margin: 0.75rem 0;
+  display: block;
+}
+
+/* Hiệu ứng viền khi hình ảnh được nhấp chọn */
+.tiptap img.ProseMirror-selectednode {
+  outline: 2px solid #2563eb;
+  outline-offset: 2px;
+}
+
 /* ========================================================= */
 /* QUY TẮC IN ẤN TIÊU CHUẨN: CHỈ IN DUY NHẤT TỜ GIẤY TÀI LIỆU */
 /* ========================================================= */

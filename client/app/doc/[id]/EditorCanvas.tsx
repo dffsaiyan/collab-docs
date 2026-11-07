@@ -2,6 +2,9 @@
 
 import { useEditor, EditorContent, Mark, Extension, mergeAttributes } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
+import TaskList from "@tiptap/extension-task-list";
+import TaskItem from "@tiptap/extension-task-item";
+import Image from "@tiptap/extension-image";
 import EditorHeader from "./EditorHeader";
 
 // Kiểu dữ liệu thuộc tính truyền vào component
@@ -102,10 +105,54 @@ const TextAlign = Extension.create({
   },
 });
 
+// Extension mở rộng hỗ trợ nhiều kiểu hiển thị cho danh sách
+const CustomListStyle = Extension.create({
+  name: "customListStyle",
+  addGlobalAttributes() {
+    return [
+      {
+        // Áp dụng thuộc tính listStyle cho danh sách chấm và danh sách số
+        types: ["bulletList", "orderedList"],
+        attributes: {
+          listStyle: {
+            default: "default",
+            parseHTML: (el) => el.getAttribute("data-list-style") || "default",
+            renderHTML: (attrs) => ({ "data-list-style": attrs.listStyle || "default" }),
+          },
+        },
+      },
+    ];
+  },
+});
+
 export default function EditorCanvas({ docId }: EditorCanvasProps) {
   // Khởi tạo trình soạn thảo Tiptap với cấu hình cơ bản cùng các extension định dạng
   const editor = useEditor({
-    extensions: [StarterKit, FontSize, TextColor, HighlightColor, TextAlign],
+    extensions: [
+      // Kích hoạt link và cho phép nhấp chuột để mở trang web sang tab mới
+      StarterKit.configure({
+        link: {
+          openOnClick: true,
+          autolink: true,
+        },
+      }),
+      FontSize,
+      TextColor,
+      HighlightColor,
+      TextAlign,
+      CustomListStyle,
+      // Hỗ trợ danh sách công việc có ô checkbox
+      TaskList,
+      // Hỗ trợ từng mục công việc và cho phép lồng cấp bằng phím Tab
+      TaskItem.configure({
+        nested: true,
+      }),
+      // Hỗ trợ chèn và hiển thị hình ảnh chuẩn (bao gồm ảnh tải lên dạng Base64)
+      Image.configure({
+        inline: false,
+        allowBase64: true,
+      }),
+    ],
     // Để trang giấy trắng hoàn toàn khi khởi tạo
     content: "",
     // Tắt chế độ render tức thì trên server để tránh xung đột Hydration trong Next.js

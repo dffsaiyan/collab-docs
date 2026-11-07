@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
+import { createPortal } from "react-dom";
 import Link from "next/link";
 import Image from "next/image";
 import logoImg from "@/app/logo.png";
@@ -57,6 +58,35 @@ export default function EditorHeader({ docId, editor }: EditorHeaderProps) {
   const [isAlignMenuOpen, setIsAlignMenuOpen] = useState(false);
   // Tham chiếu DOM đến khung menu căn lề
   const alignMenuRef = useRef<HTMLDivElement>(null);
+
+  // Trạng thái mở menu danh sách chấm
+  const [isBulletMenuOpen, setIsBulletMenuOpen] = useState(false);
+  // Tham chiếu DOM đến khung menu danh sách chấm
+  const bulletMenuRef = useRef<HTMLDivElement>(null);
+  // Trạng thái mở menu danh sách số
+  const [isOrderedMenuOpen, setIsOrderedMenuOpen] = useState(false);
+  // Tham chiếu DOM đến khung menu danh sách số
+  const orderedMenuRef = useRef<HTMLDivElement>(null);
+
+  // Trạng thái hiển thị popup chèn liên kết
+  const [isLinkPopupOpen, setIsLinkPopupOpen] = useState(false);
+  // Giá trị văn bản hiển thị của link
+  const [linkText, setLinkText] = useState("");
+  // Giá trị đường dẫn URL của link
+  const [linkUrl, setLinkUrl] = useState("");
+  // Tham chiếu DOM đến khung popup chèn link
+  const linkPopupRef = useRef<HTMLDivElement>(null);
+
+  // Trạng thái mở menu chọn nguồn ảnh
+  const [isImageMenuOpen, setIsImageMenuOpen] = useState(false);
+  // Trạng thái mở modal nhập link ảnh URL
+  const [isImageUrlModalOpen, setIsImageUrlModalOpen] = useState(false);
+  // Giá trị đường link ảnh nhập vào
+  const [imageUrlInput, setImageUrlInput] = useState("");
+  // Tham chiếu DOM đến khung menu chọn ảnh
+  const imageMenuRef = useRef<HTMLDivElement>(null);
+  // Tham chiếu DOM đến thẻ input file ẩn dùng để tải ảnh từ máy tính
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Áp dụng cỡ chữ mới vào văn bản đang chọn hoặc con trỏ chuột
   const applyFontSize = (sizeVal: number) => {
@@ -120,7 +150,102 @@ export default function EditorHeader({ docId, editor }: EditorHeaderProps) {
     return "format_align_left";
   };
 
-  // Tự động đóng menu đề mục, bảng màu và menu căn lề khi click chuột ra bất kỳ vị trí nào bên ngoài
+  // Áp dụng kiểu danh sách chấm tròn
+  const applyBulletStyle = (style: string) => {
+    if (!editor) return;
+    if (!editor.isActive("bulletList")) {
+      editor.chain().focus().toggleBulletList().run();
+    }
+    editor.chain().focus().updateAttributes("bulletList", { listStyle: style }).run();
+    setIsBulletMenuOpen(false);
+  };
+
+  // Áp dụng kiểu danh sách đánh số
+  const applyOrderedStyle = (style: string) => {
+    if (!editor) return;
+    if (!editor.isActive("orderedList")) {
+      editor.chain().focus().toggleOrderedList().run();
+    }
+    editor.chain().focus().updateAttributes("orderedList", { listStyle: style }).run();
+    setIsOrderedMenuOpen(false);
+  };
+
+  // Mở popup chèn link và tự động trích xuất chữ đang bôi đen hoặc link hiện tại
+  const handleOpenLinkPopup = () => {
+    if (!editor) return;
+    const { from, to } = editor.state.selection;
+    const selectedText = editor.state.doc.textBetween(from, to);
+    const existingUrl = editor.getAttributes("link").href || "";
+    setLinkText(selectedText);
+    setLinkUrl(existingUrl);
+    setIsLinkPopupOpen(true);
+    setIsImageMenuOpen(false);
+    setIsBulletMenuOpen(false);
+    setIsOrderedMenuOpen(false);
+    setIsAlignMenuOpen(false);
+    setActiveColorPicker(null);
+    setIsHeadingMenuOpen(false);
+  };
+
+  // Áp dụng chèn hoặc cập nhật đường dẫn liên kết
+  const handleApplyLink = () => {
+    if (!editor) return;
+    if (!linkUrl.trim()) {
+      editor.chain().focus().extendMarkRange("link").unsetLink().run();
+      setIsLinkPopupOpen(false);
+      return;
+    }
+
+    // Tự động chuẩn hóa tiền tố https:// nếu người dùng chưa nhập
+    let finalUrl = linkUrl.trim();
+    if (!/^https?:\/\//i.test(finalUrl) && !/^mailto:/i.test(finalUrl)) {
+      finalUrl = `https://${finalUrl}`;
+    }
+
+    const { from, to } = editor.state.selection;
+    const selectedText = editor.state.doc.textBetween(from, to);
+
+    if (linkText && linkText !== selectedText) {
+      editor.chain().focus().insertContent(`<a href="${finalUrl}">${linkText}</a>`).run();
+    } else {
+      editor.chain().focus().extendMarkRange("link").setLink({ href: finalUrl }).run();
+    }
+
+    setIsLinkPopupOpen(false);
+  };
+
+  // Gỡ bỏ liên kết đang chọn
+  const handleRemoveLink = () => {
+    if (!editor) return;
+    editor.chain().focus().extendMarkRange("link").unsetLink().run();
+    setIsLinkPopupOpen(false);
+  };
+
+  // Xử lý chọn tệp hình ảnh từ máy tính và chèn vào văn bản
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file && editor) {
+      const reader = new FileReader();
+      reader.onload = () => {
+        const base64Url = reader.result as string;
+        editor.chain().focus().setImage({ src: base64Url }).run();
+      };
+      reader.readAsDataURL(file);
+    }
+    setIsImageMenuOpen(false);
+    if (e.target) e.target.value = "";
+  };
+
+  // Xử lý chèn hình ảnh từ đường link internet
+  const handleInsertImageUrl = () => {
+    if (imageUrlInput.trim() && editor) {
+      editor.chain().focus().setImage({ src: imageUrlInput.trim() }).run();
+      setImageUrlInput("");
+      setIsImageUrlModalOpen(false);
+    }
+  };
+
+  // Tự động đóng các menu xổ xuống khi click chuột ra bất kỳ vị trí nào bên ngoài
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (headingMenuRef.current && !headingMenuRef.current.contains(event.target as Node)) {
@@ -132,16 +257,59 @@ export default function EditorHeader({ docId, editor }: EditorHeaderProps) {
       if (alignMenuRef.current && !alignMenuRef.current.contains(event.target as Node)) {
         setIsAlignMenuOpen(false);
       }
+      if (bulletMenuRef.current && !bulletMenuRef.current.contains(event.target as Node)) {
+        setIsBulletMenuOpen(false);
+      }
+      if (orderedMenuRef.current && !orderedMenuRef.current.contains(event.target as Node)) {
+        setIsOrderedMenuOpen(false);
+      }
+      if (linkPopupRef.current && !linkPopupRef.current.contains(event.target as Node)) {
+        setIsLinkPopupOpen(false);
+      }
+      if (imageMenuRef.current && !imageMenuRef.current.contains(event.target as Node)) {
+        setIsImageMenuOpen(false);
+      }
     };
 
-    if (isHeadingMenuOpen || activeColorPicker || isAlignMenuOpen) {
+    if (
+      isHeadingMenuOpen ||
+      activeColorPicker ||
+      isAlignMenuOpen ||
+      isBulletMenuOpen ||
+      isOrderedMenuOpen ||
+      isLinkPopupOpen ||
+      isImageMenuOpen
+    ) {
       document.addEventListener("mousedown", handleClickOutside);
     }
 
     return () => {
       document.removeEventListener("mousedown", handleClickOutside);
     };
-  }, [isHeadingMenuOpen, activeColorPicker, isAlignMenuOpen]);
+  }, [
+    isHeadingMenuOpen,
+    activeColorPicker,
+    isAlignMenuOpen,
+    isBulletMenuOpen,
+    isOrderedMenuOpen,
+    isLinkPopupOpen,
+    isImageMenuOpen,
+  ]);
+
+  // Lắng nghe phím tắt Ctrl + K để mở nhanh popup chèn liên kết
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "k") {
+        event.preventDefault();
+        handleOpenLinkPopup();
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [editor]);
 
   // Hàm xác định nhãn hiển thị trên thanh công cụ theo con trỏ chuột
   const getCurrentHeadingLabel = () => {
@@ -742,16 +910,190 @@ export default function EditorHeader({ docId, editor }: EditorHeaderProps) {
 
         {/* Nhóm danh sách và trích dẫn */}
         <div className="flex items-center gap-0.5 shrink-0">
-          <button type="button" className="w-7 h-7 flex items-center justify-center rounded hover:bg-slate-100 transition-colors cursor-pointer" title="Danh sách chấm">
-            <span className="material-symbols-outlined text-[17px]">format_list_bulleted</span>
-          </button>
-          <button type="button" className="w-7 h-7 flex items-center justify-center rounded hover:bg-slate-100 transition-colors cursor-pointer" title="Danh sách số">
-            <span className="material-symbols-outlined text-[17px]">format_list_numbered</span>
-          </button>
-          <button type="button" className="w-7 h-7 flex items-center justify-center rounded hover:bg-slate-100 transition-colors cursor-pointer" title="Checklist">
+          {/* Nút danh sách chấm tròn kèm Dropdown 6 mẫu */}
+          <div ref={bulletMenuRef} className="flex items-center shrink-0 relative">
+            <button
+              type="button"
+              onClick={() => editor?.chain().focus().toggleBulletList().run()}
+              className={`h-7 px-1 flex items-center justify-center rounded-l transition-colors cursor-pointer ${
+                editor?.isActive("bulletList") ? "bg-blue-50 text-blue-600 font-medium" : "text-slate-700 hover:bg-slate-100"
+              }`}
+              title="Danh sách gạch đầu dòng (Ctrl+Shift+8)"
+            >
+              <span className="material-symbols-outlined text-[17px]">format_list_bulleted</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setIsBulletMenuOpen(!isBulletMenuOpen);
+                setIsOrderedMenuOpen(false);
+              }}
+              className={`h-7 px-0.5 flex items-center justify-center rounded-r transition-colors cursor-pointer ${
+                isBulletMenuOpen ? "bg-slate-200 text-slate-800" : "text-slate-500 hover:bg-slate-100"
+              }`}
+              title="Chọn kiểu gạch đầu dòng"
+            >
+              <span className="material-symbols-outlined text-[13px]">
+                {isBulletMenuOpen ? "arrow_drop_up" : "arrow_drop_down"}
+              </span>
+            </button>
+
+            {/* Popup 6 mẫu danh sách chấm (Lưới 3x2) */}
+            {isBulletMenuOpen && (
+              <div className="absolute top-8 left-0 z-50 bg-white rounded-lg shadow-2xl border border-slate-200 p-2.5 grid grid-cols-3 gap-2 w-[280px] select-none">
+                {/* Mẫu 1: Tròn đặc / Tròn rỗng / Vuông */}
+                <button type="button" onClick={() => applyBulletStyle("default")} className="h-[76px] p-2 rounded border border-slate-200 hover:border-blue-500 hover:bg-blue-50/20 transition-all flex flex-col justify-between cursor-pointer text-left" title="Mặc định">
+                  <div className="flex items-center gap-1.5"><span className="text-xs">●</span><div className="h-1 bg-slate-300 rounded flex-1" /></div>
+                  <div className="flex items-center gap-1.5 pl-2.5"><span className="text-xs">○</span><div className="h-1 bg-slate-300 rounded flex-1" /></div>
+                  <div className="flex items-center gap-1.5 pl-4"><span className="text-[10px]">■</span><div className="h-1 bg-slate-300 rounded flex-1" /></div>
+                  <div className="flex items-center gap-1.5"><span className="text-xs">●</span><div className="h-1 bg-slate-300 rounded flex-1" /></div>
+                </button>
+
+                {/* Mẫu 2: Kim cương ❖ / Mũi tên ➤ */}
+                <button type="button" onClick={() => applyBulletStyle("diamond")} className="h-[76px] p-2 rounded border border-slate-200 hover:border-blue-500 hover:bg-blue-50/20 transition-all flex flex-col justify-between cursor-pointer text-left" title="Hình thoi & Mũi tên">
+                  <div className="flex items-center gap-1.5"><span className="text-[10px]">❖</span><div className="h-1 bg-slate-300 rounded flex-1" /></div>
+                  <div className="flex items-center gap-1.5 pl-2.5"><span className="text-[10px]">➤</span><div className="h-1 bg-slate-300 rounded flex-1" /></div>
+                  <div className="flex items-center gap-1.5 pl-4"><span className="text-[10px]">■</span><div className="h-1 bg-slate-300 rounded flex-1" /></div>
+                  <div className="flex items-center gap-1.5"><span className="text-[10px]">❖</span><div className="h-1 bg-slate-300 rounded flex-1" /></div>
+                </button>
+
+                {/* Mẫu 3: Hộp vuông rỗng ❑ */}
+                <button type="button" onClick={() => applyBulletStyle("box")} className="h-[76px] p-2 rounded border border-slate-200 hover:border-blue-500 hover:bg-blue-50/20 transition-all flex flex-col justify-between cursor-pointer text-left" title="Hộp vuông rỗng">
+                  <div className="flex items-center gap-1.5"><span className="text-xs">❑</span><div className="h-1 bg-slate-300 rounded flex-1" /></div>
+                  <div className="flex items-center gap-1.5 pl-2.5"><span className="text-xs">❒</span><div className="h-1 bg-slate-300 rounded flex-1" /></div>
+                  <div className="flex items-center gap-1.5 pl-4"><span className="text-xs">❏</span><div className="h-1 bg-slate-300 rounded flex-1" /></div>
+                  <div className="flex items-center gap-1.5"><span className="text-xs">❑</span><div className="h-1 bg-slate-300 rounded flex-1" /></div>
+                </button>
+
+                {/* Mẫu 4: Mũi tên ➜ / Thoi đặc ◆ */}
+                <button type="button" onClick={() => applyBulletStyle("arrow")} className="h-[76px] p-2 rounded border border-slate-200 hover:border-blue-500 hover:bg-blue-50/20 transition-all flex flex-col justify-between cursor-pointer text-left" title="Mũi tên & Kim cương">
+                  <div className="flex items-center gap-1.5"><span className="text-xs">➜</span><div className="h-1 bg-slate-300 rounded flex-1" /></div>
+                  <div className="flex items-center gap-1.5 pl-2.5"><span className="text-[10px]">◆</span><div className="h-1 bg-slate-300 rounded flex-1" /></div>
+                  <div className="flex items-center gap-1.5 pl-4"><span className="text-xs">●</span><div className="h-1 bg-slate-300 rounded flex-1" /></div>
+                  <div className="flex items-center gap-1.5"><span className="text-xs">➜</span><div className="h-1 bg-slate-300 rounded flex-1" /></div>
+                </button>
+
+                {/* Mẫu 5: Ngôi sao ★ */}
+                <button type="button" onClick={() => applyBulletStyle("star")} className="h-[76px] p-2 rounded border border-slate-200 hover:border-blue-500 hover:bg-blue-50/20 transition-all flex flex-col justify-between cursor-pointer text-left" title="Ngôi sao">
+                  <div className="flex items-center gap-1.5"><span className="text-xs">★</span><div className="h-1 bg-slate-300 rounded flex-1" /></div>
+                  <div className="flex items-center gap-1.5 pl-2.5"><span className="text-xs">○</span><div className="h-1 bg-slate-300 rounded flex-1" /></div>
+                  <div className="flex items-center gap-1.5 pl-4"><span className="text-[10px]">■</span><div className="h-1 bg-slate-300 rounded flex-1" /></div>
+                  <div className="flex items-center gap-1.5"><span className="text-xs">★</span><div className="h-1 bg-slate-300 rounded flex-1" /></div>
+                </button>
+
+                {/* Mẫu 6: Mũi tên phi ➢ */}
+                <button type="button" onClick={() => applyBulletStyle("pointer")} className="h-[76px] p-2 rounded border border-slate-200 hover:border-blue-500 hover:bg-blue-50/20 transition-all flex flex-col justify-between cursor-pointer text-left" title="Mũi tên phi">
+                  <div className="flex items-center gap-1.5"><span className="text-xs">➢</span><div className="h-1 bg-slate-300 rounded flex-1" /></div>
+                  <div className="flex items-center gap-1.5 pl-2.5"><span className="text-xs">○</span><div className="h-1 bg-slate-300 rounded flex-1" /></div>
+                  <div className="flex items-center gap-1.5 pl-4"><span className="text-[10px]">■</span><div className="h-1 bg-slate-300 rounded flex-1" /></div>
+                  <div className="flex items-center gap-1.5"><span className="text-xs">➢</span><div className="h-1 bg-slate-300 rounded flex-1" /></div>
+                </button>
+              </div>
+            )}
+          </div>
+
+          {/* Nút danh sách đánh số kèm Dropdown 6 mẫu */}
+          <div ref={orderedMenuRef} className="flex items-center shrink-0 relative">
+            <button
+              type="button"
+              onClick={() => editor?.chain().focus().toggleOrderedList().run()}
+              className={`h-7 px-1 flex items-center justify-center rounded-l transition-colors cursor-pointer ${
+                editor?.isActive("orderedList") ? "bg-blue-50 text-blue-600 font-medium" : "text-slate-700 hover:bg-slate-100"
+              }`}
+              title="Danh sách đánh số (Ctrl+Shift+7)"
+            >
+              <span className="material-symbols-outlined text-[17px]">format_list_numbered</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setIsOrderedMenuOpen(!isOrderedMenuOpen);
+                setIsBulletMenuOpen(false);
+              }}
+              className={`h-7 px-0.5 flex items-center justify-center rounded-r transition-colors cursor-pointer ${
+                isOrderedMenuOpen ? "bg-slate-200 text-slate-800" : "text-slate-500 hover:bg-slate-100"
+              }`}
+              title="Chọn kiểu đánh số"
+            >
+              <span className="material-symbols-outlined text-[13px]">
+                {isOrderedMenuOpen ? "arrow_drop_up" : "arrow_drop_down"}
+              </span>
+            </button>
+
+            {/* Popup 6 mẫu danh sách đánh số (Lưới 3x2) */}
+            {isOrderedMenuOpen && (
+              <div className="absolute top-8 left-0 z-50 bg-white rounded-lg shadow-2xl border border-slate-200 p-2.5 grid grid-cols-3 gap-2 w-[280px] select-none">
+                {/* Mẫu 1: 1. a. i. */}
+                <button type="button" onClick={() => applyOrderedStyle("decimal-alpha")} className="h-[76px] p-2 rounded border border-slate-200 hover:border-blue-500 hover:bg-blue-50/20 transition-all flex flex-col justify-between cursor-pointer text-left" title="Số và chữ cái">
+                  <div className="flex items-center gap-1.5"><span className="text-[10px] font-mono">1.</span><div className="h-1 bg-slate-300 rounded flex-1" /></div>
+                  <div className="flex items-center gap-1.5 pl-2.5"><span className="text-[10px] font-mono">a.</span><div className="h-1 bg-slate-300 rounded flex-1" /></div>
+                  <div className="flex items-center gap-1.5 pl-4"><span className="text-[10px] font-mono">i.</span><div className="h-1 bg-slate-300 rounded flex-1" /></div>
+                  <div className="flex items-center gap-1.5"><span className="text-[10px] font-mono">2.</span><div className="h-1 bg-slate-300 rounded flex-1" /></div>
+                </button>
+
+                {/* Mẫu 2: 1) a) i) */}
+                <button type="button" onClick={() => applyOrderedStyle("parenthesis")} className="h-[76px] p-2 rounded border border-slate-200 hover:border-blue-500 hover:bg-blue-50/20 transition-all flex flex-col justify-between cursor-pointer text-left" title="Dấu ngoặc đơn">
+                  <div className="flex items-center gap-1.5"><span className="text-[10px] font-mono">1)</span><div className="h-1 bg-slate-300 rounded flex-1" /></div>
+                  <div className="flex items-center gap-1.5 pl-2.5"><span className="text-[10px] font-mono">a)</span><div className="h-1 bg-slate-300 rounded flex-1" /></div>
+                  <div className="flex items-center gap-1.5 pl-4"><span className="text-[10px] font-mono">i)</span><div className="h-1 bg-slate-300 rounded flex-1" /></div>
+                  <div className="flex items-center gap-1.5"><span className="text-[10px] font-mono">2)</span><div className="h-1 bg-slate-300 rounded flex-1" /></div>
+                </button>
+
+                {/* Mẫu 3: 1. 1.1. */}
+                <button type="button" onClick={() => applyOrderedStyle("legal")} className="h-[76px] p-2 rounded border border-slate-200 hover:border-blue-500 hover:bg-blue-50/20 transition-all flex flex-col justify-between cursor-pointer text-left" title="Phân cấp tài liệu">
+                  <div className="flex items-center gap-1.5"><span className="text-[10px] font-mono">1.</span><div className="h-1 bg-slate-300 rounded flex-1" /></div>
+                  <div className="flex items-center gap-1.5 pl-2.5"><span className="text-[9px] font-mono">1.1.</span><div className="h-1 bg-slate-300 rounded flex-1" /></div>
+                  <div className="flex items-center gap-1.5 pl-3.5"><span className="text-[8px] font-mono">1.2.1.</span><div className="h-1 bg-slate-300 rounded flex-1" /></div>
+                  <div className="flex items-center gap-1.5"><span className="text-[10px] font-mono">2.</span><div className="h-1 bg-slate-300 rounded flex-1" /></div>
+                </button>
+
+                {/* Mẫu 4: A. a. i. */}
+                <button type="button" onClick={() => applyOrderedStyle("upper-alpha")} className="h-[76px] p-2 rounded border border-slate-200 hover:border-blue-500 hover:bg-blue-50/20 transition-all flex flex-col justify-between cursor-pointer text-left" title="Chữ in hoa">
+                  <div className="flex items-center gap-1.5"><span className="text-[10px] font-mono">A.</span><div className="h-1 bg-slate-300 rounded flex-1" /></div>
+                  <div className="flex items-center gap-1.5 pl-2.5"><span className="text-[10px] font-mono">a.</span><div className="h-1 bg-slate-300 rounded flex-1" /></div>
+                  <div className="flex items-center gap-1.5 pl-4"><span className="text-[10px] font-mono">i.</span><div className="h-1 bg-slate-300 rounded flex-1" /></div>
+                  <div className="flex items-center gap-1.5"><span className="text-[10px] font-mono">B.</span><div className="h-1 bg-slate-300 rounded flex-1" /></div>
+                </button>
+
+                {/* Mẫu 5: I. A. 1. */}
+                <button type="button" onClick={() => applyOrderedStyle("roman")} className="h-[76px] p-2 rounded border border-slate-200 hover:border-blue-500 hover:bg-blue-50/20 transition-all flex flex-col justify-between cursor-pointer text-left" title="Số La Mã">
+                  <div className="flex items-center gap-1.5"><span className="text-[10px] font-mono">I.</span><div className="h-1 bg-slate-300 rounded flex-1" /></div>
+                  <div className="flex items-center gap-1.5 pl-2.5"><span className="text-[10px] font-mono">A.</span><div className="h-1 bg-slate-300 rounded flex-1" /></div>
+                  <div className="flex items-center gap-1.5 pl-4"><span className="text-[10px] font-mono">1.</span><div className="h-1 bg-slate-300 rounded flex-1" /></div>
+                  <div className="flex items-center gap-1.5"><span className="text-[10px] font-mono">II.</span><div className="h-1 bg-slate-300 rounded flex-1" /></div>
+                </button>
+
+                {/* Mẫu 6: 01. a. i. */}
+                <button type="button" onClick={() => applyOrderedStyle("padded")} className="h-[76px] p-2 rounded border border-slate-200 hover:border-blue-500 hover:bg-blue-50/20 transition-all flex flex-col justify-between cursor-pointer text-left" title="Số có số 0 dẫn đầu">
+                  <div className="flex items-center gap-1.5"><span className="text-[9px] font-mono">01.</span><div className="h-1 bg-slate-300 rounded flex-1" /></div>
+                  <div className="flex items-center gap-1.5 pl-2.5"><span className="text-[10px] font-mono">a.</span><div className="h-1 bg-slate-300 rounded flex-1" /></div>
+                  <div className="flex items-center gap-1.5 pl-4"><span className="text-[10px] font-mono">i.</span><div className="h-1 bg-slate-300 rounded flex-1" /></div>
+                  <div className="flex items-center gap-1.5"><span className="text-[9px] font-mono">02.</span><div className="h-1 bg-slate-300 rounded flex-1" /></div>
+                </button>
+              </div>
+            )}
+          </div>
+          {/* Nút danh sách công việc có ô tích checkbox */}
+          <button
+            type="button"
+            onClick={() => editor?.chain().focus().toggleTaskList().run()}
+            className={`w-7 h-7 flex items-center justify-center rounded transition-colors cursor-pointer ${
+              editor?.isActive("taskList") ? "bg-blue-50 text-blue-600 font-medium" : "text-slate-700 hover:bg-slate-100"
+            }`}
+            title="Danh sách việc cần làm (Checklist)"
+          >
             <span className="material-symbols-outlined text-[17px]">check_box</span>
           </button>
-          <button type="button" className="w-7 h-7 flex items-center justify-center rounded hover:bg-slate-100 transition-colors cursor-pointer" title="Trích dẫn">
+
+          {/* Nút định dạng khối trích dẫn */}
+          <button
+            type="button"
+            onClick={() => editor?.chain().focus().toggleBlockquote().run()}
+            className={`w-7 h-7 flex items-center justify-center rounded transition-colors cursor-pointer ${
+              editor?.isActive("blockquote") ? "bg-blue-50 text-blue-600 font-medium" : "text-slate-700 hover:bg-slate-100"
+            }`}
+            title="Khối trích dẫn (Ctrl+Shift+B)"
+          >
             <span className="material-symbols-outlined text-[17px]">format_quote</span>
           </button>
         </div>
@@ -760,12 +1102,192 @@ export default function EditorHeader({ docId, editor }: EditorHeaderProps) {
 
         {/* Nhóm chèn liên kết và khối nội dung */}
         <div className="flex items-center gap-0.5 shrink-0">
-          <button type="button" className="w-7 h-7 flex items-center justify-center rounded hover:bg-slate-100 transition-colors cursor-pointer" title="Chèn liên kết">
-            <span className="material-symbols-outlined text-[17px]">link</span>
-          </button>
-          <button type="button" className="w-7 h-7 flex items-center justify-center rounded hover:bg-slate-100 transition-colors cursor-pointer" title="Chèn ảnh">
-            <span className="material-symbols-outlined text-[17px]">image</span>
-          </button>
+          {/* Nút chèn liên kết kèm Popup (hỗ trợ phím tắt Ctrl+K) */}
+          <div ref={linkPopupRef} className="relative">
+            <button
+              type="button"
+              onClick={handleOpenLinkPopup}
+              className={`w-7 h-7 flex items-center justify-center rounded transition-colors cursor-pointer ${
+                editor?.isActive("link") ? "bg-blue-50 text-blue-600 font-medium" : "text-slate-700 hover:bg-slate-100"
+              }`}
+              title="Chèn liên kết (Ctrl+K)"
+            >
+              <span className="material-symbols-outlined text-[17px]">link</span>
+            </button>
+
+            {/* Popup thiết lập liên kết */}
+            {isLinkPopupOpen && (
+              <div className="absolute top-8 left-0 z-50 bg-white rounded-lg shadow-2xl border border-slate-200 p-3 w-[300px] flex flex-col gap-2.5">
+                <div className="text-xs font-semibold text-slate-700">Chèn đường dẫn liên kết</div>
+                <div className="flex flex-col gap-1">
+                  <label className="text-[11px] text-slate-500 font-medium">Văn bản hiển thị</label>
+                  <input
+                    type="text"
+                    value={linkText}
+                    onChange={(e) => setLinkText(e.target.value)}
+                    placeholder="Văn bản muốn hiển thị..."
+                    className="w-full text-xs px-2.5 py-1.5 border border-slate-200 rounded focus:border-blue-500 focus:outline-none"
+                  />
+                </div>
+                <div className="flex flex-col gap-1">
+                  <label className="text-[11px] text-slate-500 font-medium">Đường dẫn liên kết (URL)</label>
+                  <input
+                    type="text"
+                    value={linkUrl}
+                    onChange={(e) => setLinkUrl(e.target.value)}
+                    placeholder="https://example.com"
+                    className="w-full text-xs px-2.5 py-1.5 border border-slate-200 rounded focus:border-blue-500 focus:outline-none"
+                    autoFocus
+                  />
+                </div>
+                <div className="flex items-center justify-between pt-1">
+                  {editor?.isActive("link") ? (
+                    <button
+                      type="button"
+                      onClick={handleRemoveLink}
+                      className="text-xs text-red-500 hover:text-red-700 font-medium px-1 cursor-pointer"
+                    >
+                      Xóa liên kết
+                    </button>
+                  ) : <div />}
+                  <div className="flex items-center gap-1.5">
+                    <button
+                      type="button"
+                      onClick={() => setIsLinkPopupOpen(false)}
+                      className="px-2.5 py-1 text-xs text-slate-600 hover:bg-slate-100 rounded cursor-pointer"
+                    >
+                      Hủy
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleApplyLink}
+                      className="px-3 py-1 text-xs bg-blue-600 hover:bg-blue-700 text-white font-medium rounded cursor-pointer transition-colors"
+                    >
+                      Áp dụng
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Nút chèn hình ảnh kèm Menu tùy chọn */}
+          <div ref={imageMenuRef} className="relative">
+            <button
+              type="button"
+              onClick={() => setIsImageMenuOpen(!isImageMenuOpen)}
+              className={`w-7 h-7 flex items-center justify-center rounded transition-colors cursor-pointer ${
+                isImageMenuOpen ? "bg-slate-200 text-slate-800" : "text-slate-700 hover:bg-slate-100"
+              }`}
+              title="Chèn hình ảnh"
+            >
+              <span className="material-symbols-outlined text-[17px]">image</span>
+            </button>
+
+            {/* Menu xổ xuống chọn phương thức chèn ảnh */}
+            {isImageMenuOpen && (
+              <div className="absolute top-8 left-0 z-50 bg-white rounded-lg shadow-2xl border border-slate-200 py-1 w-[200px] flex flex-col">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsImageMenuOpen(false);
+                    fileInputRef.current?.click();
+                  }}
+                  className="flex items-center gap-2 px-3 py-2 text-xs text-slate-700 hover:bg-slate-50 transition-colors text-left cursor-pointer"
+                >
+                  <span className="material-symbols-outlined text-[16px] text-slate-500">upload_file</span>
+                  Tải lên từ máy tính
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsImageMenuOpen(false);
+                    setIsImageUrlModalOpen(true);
+                  }}
+                  className="flex items-center gap-2 px-3 py-2 text-xs text-slate-700 hover:bg-slate-50 transition-colors text-left cursor-pointer"
+                >
+                  <span className="material-symbols-outlined text-[16px] text-slate-500">link</span>
+                  Dán đường dẫn ảnh (URL)
+                </button>
+              </div>
+            )}
+
+            {/* Thẻ input chọn file ẩn */}
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              onChange={handleFileChange}
+              className="hidden"
+            />
+          </div>
+
+          {/* Modal nhập đường link ảnh được gắn ra ngoài body để căn giữa tuyệt đối */}
+          {isImageUrlModalOpen && typeof document !== "undefined" && createPortal(
+            <div
+              className="fixed inset-0 z-[9999] bg-black/50 backdrop-blur-xs flex items-center justify-center p-4"
+              onClick={() => setIsImageUrlModalOpen(false)}
+            >
+              <div
+                className="bg-white rounded-xl shadow-2xl border border-slate-200 p-5 w-full max-w-sm flex flex-col gap-3.5"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <div className="flex items-center justify-between">
+                  <div className="text-sm font-semibold text-slate-800 flex items-center gap-1.5">
+                    <span className="material-symbols-outlined text-[18px] text-blue-600">image</span>
+                    Chèn hình ảnh từ đường dẫn
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsImageUrlModalOpen(false);
+                      setImageUrlInput("");
+                    }}
+                    className="text-slate-400 hover:text-slate-600 p-1 rounded-md hover:bg-slate-100 transition-colors cursor-pointer"
+                  >
+                    <span className="material-symbols-outlined text-[18px]">close</span>
+                  </button>
+                </div>
+
+                <div className="flex flex-col gap-1">
+                  <label className="text-[11px] text-slate-500 font-medium">Đường dẫn hình ảnh (URL)</label>
+                  <input
+                    type="text"
+                    value={imageUrlInput}
+                    onChange={(e) => setImageUrlInput(e.target.value)}
+                    placeholder="https://example.com/hinh-anh.jpg"
+                    className="w-full text-xs px-3 py-2 border border-slate-200 rounded-lg focus:border-blue-500 focus:outline-none"
+                    autoFocus
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") handleInsertImageUrl();
+                      if (e.key === "Escape") setIsImageUrlModalOpen(false);
+                    }}
+                  />
+                </div>
+
+                <div className="flex justify-end gap-2 pt-1">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsImageUrlModalOpen(false);
+                      setImageUrlInput("");
+                    }}
+                    className="px-3 py-1.5 text-xs text-slate-600 hover:bg-slate-100 rounded-lg cursor-pointer"
+                  >
+                    Hủy
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleInsertImageUrl}
+                    className="px-4 py-1.5 text-xs bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg cursor-pointer transition-colors shadow-sm"
+                  >
+                    Chèn ảnh
+                  </button>
+                </div>
+              </div>
+            </div>,
+            document.body
+          )}
           <button type="button" className="w-7 h-7 flex items-center justify-center rounded hover:bg-slate-100 transition-colors cursor-pointer" title="Khối mã code">
             <span className="material-symbols-outlined text-[17px]">integration_instructions</span>
           </button>
